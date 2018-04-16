@@ -27,18 +27,18 @@ const QString SMB_TYP[8] = {
 vector<string> equations;
 set<string> tire;
 
-void CreateResult(int row, int col);
-bool isIllegal(char* sym, int* num, int length, int range);
+void CreateResult(int row, int col);//将生成算式写入到文件
+bool isIllegal(char* sym, int* num, int length, int range);//判断算式合理性
 string CreateEquation(int range, int length,
-                       int type, bool length_uncertain);
+                       int type, bool length_uncertain); //生成单个算式
 void CreateEquations(int quantity, double rate, int length,
-                     int range, int type, bool length_uncertain);
+                     int range, int type, bool length_uncertain); //生成算式集查重并存入
 
-inline QString changeInttoString(int changeInt){
+inline QString changeInttoString(int changeInt){ //int转qstring
     return QString::number(changeInt);
 }
 
-inline QString changeDoubletoString(double changeDouble){
+inline QString changeDoubletoString(double changeDouble){ //double转qstring
     return QString::number(changeDouble);
 }
 
@@ -69,9 +69,9 @@ Confirm_Interface::Confirm_Interface(QWidget *parent) :
     connect(Button_Cancel, SIGNAL(clicked()), this,SLOT(Button_Cancel_Clicked()));
 }
 
-void Confirm_Interface::Button_Next_Clicked(){
+void Confirm_Interface::Button_Next_Clicked(){//确认要求，开始生成算式
     CreateEquations(quantity, rate, this->length, range, type, length_uncertain);
-    CreateResult(row, col);
+    CreateResult(row, col);//将生成算式写入到文件
 
     QApplication* app;
     app->exit(0);
@@ -105,7 +105,7 @@ void Confirm_Interface::setMessage(int quantity, int format_row, int format_col,
     msg += MESSAGE[5] + SMB_TYP[symbol_type];
     msg += MESSAGE[6] + changeDoubletoString(repetition_rate) + "%";
     QByteArray temp_ba = msg.toLatin1();
-    Message->setText(temp_ba.data());
+    Message->setText(temp_ba.data());//显示结果
 }
 
 void CreateResult(int row, int col){
@@ -114,8 +114,8 @@ void CreateResult(int row, int col){
     //写入文件
     for(unsigned int i = 1; i <= equations.size(); i++){
         file << equations[i - 1];
-        if(i % col){
-            for(int j = equations[i - 1].length(); j <= 20; j++)
+        if(i % col){         //非一行结束，算式后方用空格填充
+            for(int j = equations[i - 1].length(); j <= 25; j++)
                 file << " ";
         }
         else
@@ -128,21 +128,21 @@ void CreateResult(int row, int col){
 
 void CreateEquations(int quantity, double rate, int length,
                      int range, int type, bool length_uncertain){
-    int repetition_limit = rate < 1e5?quantity:1 / rate;
+    int repetition_limit = rate < 1e5?quantity:1 / rate;//利用重复率粗略计算不能出现重复算式个数
     std::string temp_equation;
     set<std::string>::iterator it;
     while(quantity--){
         temp_equation = CreateEquation(range, length, type, length_uncertain);
-        it = tire.find(temp_equation);
+        it = tire.find(temp_equation);//使用set查重
         while(it != tire.end()){
             temp_equation = CreateEquation(range, length, type, length_uncertain);
             it = tire.find(temp_equation);
         }
         int sz = equations.size();
-        if(sz >= repetition_limit)
+        if(sz >= repetition_limit)//控制查重算式个数，控制在最近的1/rate之内
             tire.erase(equations[sz - repetition_limit]);
-        tire.insert(temp_equation);
-        equations.push_back(temp_equation);
+        tire.insert(temp_equation);//插入查重集
+        equations.push_back(temp_equation);//插入结果集
     }
 }
 
@@ -154,7 +154,7 @@ string CreateEquation(int range, int length,
     char sym[6] = {0};
     int lengthadd = 0;
     int limit_Minn, type_num; //符号限制
-    if(type < 4){
+    if(type < 4){//符号种类与在SYMBOL中开始位置赋值
         limit_Minn = type;
         type_num = 1;
     }
@@ -163,66 +163,66 @@ string CreateEquation(int range, int length,
         type_num = 2;
     }
     else{
-        if(type == 6 && rand() % 2)
+        if(type == 6 && rand() % 2)//随机是否带括号
             lengthadd = 2;
         limit_Minn = 0;
         type_num = 4;
     }
-    if(length_uncertain)
+    if(length_uncertain)//如果算式长度可以不等长，随机值
         length = rand() % length + 1;
-    if(length < 2)
+    if(length < 2)//算式长度小于2，不必加括号
         lengthadd = 0;
-    if(lengthadd){
+    if(lengthadd){//随机出括号位置
         int pos = rand() % length;
         sym[pos] = '(';
-        sym[pos + 2] = ')';
+        sym[pos + 2] = ')';//设定括号内只能存在一个运算符
     }
 
-    for(int i = 0; i < length + lengthadd; i++){
+    for(int i = 0; i < length + lengthadd; i++){//随机其他位置的运算符
         if(sym[i] == 0)
             sym[i] = SYMBOL[rand() % type_num + limit_Minn];
     }
-    for(int i = 0; i <= length; i++){
+    for(int i = 0; i <= length; i++){//随机数字
         num[i] = rand() % range;
         while(rand() % 100 < 90 && !num[i]) //尽量避免0出现
             num[i] = rand() % range;
     }
 
-    while(!isIllegal(sym, num, length, range)){
+    while(!isIllegal(sym, num, length, range)){//判断合法性，非法，再随机生成一次
 
-        for(int i = 0; i < length + lengthadd; i++){
+        for(int i = 0; i < length + lengthadd; i++){//随机其他位置的运算符
             if(sym[i] == 0)
                 sym[i] = rand() % type_num + limit_Minn;
         }
-        for(int i = 0; i <= length; i++){
+        for(int i = 0; i <= length; i++){//随机数字
             num[i] = rand() % range;
-            while(rand() % 100 < 90 && !num[i])
+            while(rand() % 100 < 90 && !num[i]) //尽量避免0出现
                 num[i] = rand() % range;
         }
     }
-    string equation = "";
+    string equation = "";//组成算式，格式控制
     QString temp_qstr;
     int sym_pos = 0;
-    if(sym[0] == '('){
+    if(sym[0] == '('){//第一个符号是括号的情况
         equation += '(';
         sym_pos++;
     }
-    temp_qstr = changeInttoString(num[0]);
-    equation += temp_qstr.toStdString() + " ";
+    temp_qstr = changeInttoString(num[0]);//算式中加上数字
+    equation += temp_qstr.toStdString() + " ";//算式中加上数字后与运算符保持间隔
     for(int num_pos = 1; num_pos <= length; num_pos++){
-        equation += sym[sym_pos++];
-        equation += " ";
+        equation += sym[sym_pos++];//算式中加上运算符
+        equation += " ";//算式中加上运算符后与数字保持间隔
         if(sym[sym_pos] == '('){
             equation += '(';
             sym_pos++;
         }
         temp_qstr = changeInttoString(num[num_pos]);
-        equation += temp_qstr.toStdString();
+        equation += temp_qstr.toStdString();//算式中加上数字
         if(sym[sym_pos] == ')'){
             equation += ')';
             sym_pos++;
         }
-        equation += " ";
+        equation += " ";//算式中加上数字及括号后与运算符保持间隔
     }
     equation += "=";
     return equation;
@@ -234,8 +234,8 @@ bool isIllegal(char* sym, int* num, int length, int range){
     int num_top = 0, sym_top = -1;
     int num_pos = 0, sym_pos = 0;
     num_stack[num_top] = num[num_pos];
-    while(++num_pos <= length){
-        if(sym[sym_pos] == '('){
+    while(++num_pos <= length){//数字及运算符入栈
+        if(sym[sym_pos] == '('){//括号情况下优先级最高，只考虑仅有一个括号及括号内仅有一个运算符情况
             sym_pos++;
             if(sym[sym_pos] == '*')
                 num_stack[num_top] *= num[num_pos];
@@ -252,7 +252,7 @@ bool isIllegal(char* sym, int* num, int length, int range){
                 return false;
             sym_pos += 2;
         }
-        else if(sym[sym_pos] == '*' || sym[sym_pos] == '/'){
+        else if(sym[sym_pos] == '*' || sym[sym_pos] == '/'){//*/入栈前要清出栈顶的*/
             while(~sym_top && (sym_stack[sym_top] == '*' || sym_stack[sym_top] == '/')){
                 if(sym_stack[sym_top] == '*')
                     num_stack[num_top - 1] *= num_stack[num_top];
@@ -268,7 +268,7 @@ bool isIllegal(char* sym, int* num, int length, int range){
             num_stack[++num_top] = num[num_pos];
             sym_stack[++sym_top] = sym[sym_pos++];
         }
-        else if(sym[sym_pos] == '+' || sym[sym_pos] == '-'){
+        else if(sym[sym_pos] == '+' || sym[sym_pos] == '-'){//+-入栈前要清空栈
             while(~sym_top){
                 if(sym_stack[sym_top] == '*')
                     num_stack[num_top - 1] *= num_stack[num_top];
@@ -291,7 +291,7 @@ bool isIllegal(char* sym, int* num, int length, int range){
         else
             return false;
     }
-    while(~sym_top){
+    while(~sym_top){//清栈
         if(sym_stack[sym_top] == '*')
             num_stack[num_top - 1] *= num_stack[num_top];
         else if(sym_stack[sym_top] == '/'){

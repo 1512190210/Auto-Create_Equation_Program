@@ -286,7 +286,7 @@ void Query_Interface::Button_Cancel_Clicked(){
 
 //要求合理性
 bool Query_Interface::isIllegal(){
-    if(symbol_quantity == 1 && symbol_type == 6){
+    if(symbol_quantity == 1 && symbol_type == 6){//算式长度与符号类型的矛盾
         lock |= 1 << ILLEGAL_LOCK; //加锁
         Illegal_Wranning-> setText("请检查数量、数值、重复率、符号类型等！");
         Button_Next->setEnabled(false);
@@ -296,7 +296,7 @@ bool Query_Interface::isIllegal(){
     for(int i = 0; i < symbol_quantity; i++)
         number *= number_range;
     number /= (1 - repetition_rate / 100);
-    if(number < quantity){
+    if(number < quantity){//要求计算结果不合理
         lock |= 1 << ILLEGAL_LOCK; //加锁
         Illegal_Wranning-> setText("请检查数量、数值、重复率、符号类型等！");
         Button_Next->setEnabled(false);
