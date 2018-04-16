@@ -1,5 +1,6 @@
 # Auto-Create_Equation_Program
 homework. Write with Qt.
+
 该程序完成了：
  1.一定数量内的生成算式数量要求；
  2.合理的生成算式输入文件的格式要求；
